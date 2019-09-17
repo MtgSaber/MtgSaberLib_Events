@@ -7,7 +7,6 @@ import java.util.List;
  * Author: Andrew Arnold (6/18/2019)
  */
 public class SynchronousEventManager extends EventManager {
-
     public SynchronousEventManager() {
         super();
     }
