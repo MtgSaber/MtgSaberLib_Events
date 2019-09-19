@@ -1,5 +1,3 @@
-package net.mtgsaber.lib.events.test;
-
 import net.mtgsaber.lib.events.Event;
 import net.mtgsaber.lib.events.SynchronousEventManager;
 

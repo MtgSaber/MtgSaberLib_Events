@@ -1,5 +1,3 @@
-package net.mtgsaber.lib.events.test;
-
 import net.mtgsaber.lib.events.AsynchronousEventManager;
 import net.mtgsaber.lib.events.Event;
 import javafx.application.Application;
