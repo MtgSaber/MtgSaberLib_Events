@@ -46,8 +46,8 @@ public class AsynchronousEventManager extends EventManager implements Tickable {
     public void tick() {
         synchronized (EVENTS) {
             for (Event e : EVENTS)
-                if (super.LISTENER_MAP.containsKey(e.NAME))
-                    for (EventHandler handler : super.LISTENER_MAP.get(e.NAME))
+                if (super.LISTENER_MAP.containsKey(e.getName()))
+                    for (EventHandler handler : super.LISTENER_MAP.get(e.getName()))
                         handler.handle(e);
             EVENTS.clear();
         }

@@ -33,8 +33,8 @@ public class SynchronousEventManager extends EventManager {
 
     @Override
     public void push(Event e) {
-        if (LISTENER_MAP.containsKey(e.NAME))
-            for (EventHandler handler : LISTENER_MAP.get(e.NAME))
+        if (LISTENER_MAP.containsKey(e.getName()))
+            for (EventHandler handler : LISTENER_MAP.get(e.getName()))
                 handler.handle(e);
     }
 }

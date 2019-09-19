@@ -5,18 +5,23 @@ import net.mtgsaber.lib.events.SynchronousEventManager;
  * Author: Andrew Arnold (6/18/2019)
  */
 public final class Test1 {
-    public static final class GunShotEvent extends Event {
+    public static final class GunShotEvent implements Event {
         public final double VOLUME;
         public final float POS_X, POS_Y, POS_Z;
-        public final String SOUND_RES;
+        public final String SOUND_RES, NAME;
 
-        public GunShotEvent(String name, double VOLUME, float POS_X, float POS_Y, float POS_Z, String SOUND_RES) {
-            super(name);
-            this.VOLUME = VOLUME;
-            this.POS_X = POS_X;
-            this.POS_Y = POS_Y;
-            this.POS_Z = POS_Z;
-            this.SOUND_RES = SOUND_RES;
+        public GunShotEvent(String name, double volume, float posX, float posY, float posZ, String soundRes) {
+            this.NAME =name;
+            this.VOLUME = volume;
+            this.POS_X = posX;
+            this.POS_Y = posY;
+            this.POS_Z = posZ;
+            this.SOUND_RES = soundRes;
+        }
+
+        @Override
+        public String getName() {
+            return NAME;
         }
     }
 

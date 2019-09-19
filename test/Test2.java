@@ -88,16 +88,21 @@ public final class Test2 extends Application {
         primaryStage.show();
     }
 
-    public static final class SoundEvent extends Event {
-        public final String SOUND_RES;
+    public static final class SoundEvent implements Event {
+        public final String SOUND_RES, NAME;
         public final double VOLUME, POS_X, POS_Y;
 
         public SoundEvent(String name, String SOUND_RES, double VOLUME, double POS_x, double POS_Y) {
-            super(name);
+            this.NAME = name;
             this.SOUND_RES = SOUND_RES;
             this.VOLUME = VOLUME;
             this.POS_X = POS_x;
             this.POS_Y = POS_Y;
+        }
+
+        @Override
+        public String getName() {
+            return NAME;
         }
     }
 
