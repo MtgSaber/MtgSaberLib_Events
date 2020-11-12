@@ -18,7 +18,7 @@ public final class AsynchronousEventManager extends EventManager implements Runn
     private int producerCount = 0;
     private final Semaphore queueMutex = new Semaphore(1);
     private final Object producerCountLock = new Object();
-
+    private final Object suspensionLock = new Object();
 
     @Override
     public void run() {
@@ -28,32 +28,34 @@ public final class AsynchronousEventManager extends EventManager implements Runn
 
         while (running) {
             try {
-                queueMutex.acquire();
-                if (!EVENTS.isEmpty())
+                queueMutex.acquire(); // again, to make sure we don't miss any events
+                if (!EVENTS.isEmpty()) // a producer made it to the queue while we were prepping for suspension
                     try {
-                        throw new InterruptedException();
+                        throw new InterruptedException(); // process the event(s).
                     } finally {
-                        queueMutex.release();
+                        queueMutex.release(); // allow ourselves to process or allow other producers to line up.
                     }
-                queueMutex.release();
-                Thread.sleep(Long.MAX_VALUE);
+                suspensionLock.wait(10);
             } catch (InterruptedException ex) {
                 if (!running) break;
-                try {
+                try { // this try catch block waits for all producers to queue their events.
                     queueMutex.acquire();
                 } catch (InterruptedException ex2) {
                     continue;
                 }
-                while (!EVENTS.isEmpty()) {
+                while (!EVENTS.isEmpty()) { // process all events
                     Event e = EVENTS.remove();
                     List<Consumer<Event>> handlers;
-                    synchronized (HANDLER_MAP) {
-                        handlers = new LinkedList<>(HANDLER_MAP.get(e.getName()));
+                    synchronized (HANDLER_MAP) { // we need the map here
+                        handlers = new LinkedList<>();
+                        List<Consumer<Event>> mappedHandlers = HANDLER_MAP.get(e.getName());
+                        if (mappedHandlers != null) // protects against nulls when there are no handlers for this event.
+                            handlers.addAll(mappedHandlers);
                     }
                     for (Consumer<Event> handler : handlers)
                         handler.accept(e);
                 }
-                queueMutex.release();
+                queueMutex.release(); // for a very short moment
             }
         }
 
@@ -98,7 +100,7 @@ public final class AsynchronousEventManager extends EventManager implements Runn
                     return;
                 }
 
-                thread.interrupt();
+                suspensionLock.notify();
             }
             producerCount++;
         }
@@ -111,17 +113,17 @@ public final class AsynchronousEventManager extends EventManager implements Runn
         }
     }
 
-    public synchronized void setThreadInstance(Thread thread) {
+    public void setThreadInstance(Thread thread) {
         if (this.thread == null)
             this.thread = thread;
     }
 
-    public synchronized void shutdown() {
+    public void shutdown() {
         if (thread == null) return;
 
         if (running) {
             running = false;
-            thread.interrupt();
+            suspensionLock.notify();
         }
     }
 }
