@@ -15,7 +15,7 @@ public final class AsynchronousEventManager extends EventManager implements Runn
     private final Queue<Event> EVENTS = new LinkedBlockingQueue<>();
     private Thread thread;
     private volatile boolean running;
-    private int producerCount = 0;
+    private volatile int producerCount = 0;
     private final Semaphore queueMutex = new Semaphore(1);
     private final Object producerCountLock = new Object();
     private final Object suspensionLock = new Object();
