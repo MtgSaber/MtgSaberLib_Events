@@ -13,21 +13,22 @@ import java.util.function.Consumer;
  */
 public final class AsynchronousEventManager extends EventManager implements Runnable {
     private final Queue<Event> EVENTS = new LinkedBlockingQueue<>();
-    private Thread thread;
-    private volatile boolean running;
+    private volatile boolean running = true;
     private volatile int producerCount = 0;
     private final Semaphore queueMutex = new Semaphore(1);
     private final Object producerCountLock = new Object();
     private final Object suspensionLock = new Object();
 
+    public AsynchronousEventManager() {
+        queueMutex.release();
+    }
+
     @Override
     public void run() {
-        if (thread == null) return;
-
-        running = true;
-
         while (running) {
             try {
+                /*
+                if (!running) break;
                 queueMutex.acquire(); // again, to make sure we don't miss any events
                 if (!EVENTS.isEmpty()) // a producer made it to the queue while we were prepping for suspension
                     try {
@@ -35,12 +36,17 @@ public final class AsynchronousEventManager extends EventManager implements Runn
                     } finally {
                         queueMutex.release(); // allow ourselves to process or allow other producers to line up.
                     }
-                suspensionLock.wait(10);
+                 */
+                synchronized (suspensionLock) {
+                    suspensionLock.wait(10);
+                    throw new InterruptedException();
+                }
             } catch (InterruptedException ex) {
                 if (!running) break;
                 try { // this try catch block waits for all producers to queue their events.
                     queueMutex.acquire();
                 } catch (InterruptedException ex2) {
+                    if (!running) break;
                     continue;
                 }
                 while (!EVENTS.isEmpty()) { // process all events
@@ -55,11 +61,10 @@ public final class AsynchronousEventManager extends EventManager implements Runn
                     for (Consumer<Event> handler : handlers)
                         handler.accept(e);
                 }
+                if (!running) break;
                 queueMutex.release(); // for a very short moment
             }
         }
-
-        thread = null;
     }
 
     @Override
@@ -90,7 +95,7 @@ public final class AsynchronousEventManager extends EventManager implements Runn
      */
     @Override
     public void push(Event e) {
-        if (thread == null) return;
+        if (!running) return;
 
         synchronized (producerCountLock) {
             if (producerCount == 0) {
@@ -100,7 +105,9 @@ public final class AsynchronousEventManager extends EventManager implements Runn
                     return;
                 }
 
-                suspensionLock.notify();
+                synchronized (suspensionLock) {
+                    suspensionLock.notify();
+                }
             }
             producerCount++;
         }
@@ -113,17 +120,12 @@ public final class AsynchronousEventManager extends EventManager implements Runn
         }
     }
 
-    public void setThreadInstance(Thread thread) {
-        if (this.thread == null)
-            this.thread = thread;
-    }
-
     public void shutdown() {
-        if (thread == null) return;
-
         if (running) {
             running = false;
-            suspensionLock.notify();
+            synchronized (suspensionLock) {
+                suspensionLock.notify();
+            }
         }
     }
 }
